@@ -8,14 +8,16 @@ namespace rfrp::database {
 
 class CaseDatabase {
 public:
-    CaseDatabase() = default;
+    CaseDatabase();
     ~CaseDatabase();
+
     bool open(const std::filesystem::path& dbPath);
     void close();
     bool logAudit(const AuditRecord& record);
 
 private:
     void* m_sqliteHandle{nullptr};
+    std::filesystem::path m_dbPath;
 };
 
 } // namespace rfrp::database
