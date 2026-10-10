@@ -1,25 +1,24 @@
-/**
- * RogueByte Forensic Recovery Pro (RFRP)
- * SHA-256 Implementation using OpenSSL EVP API
- * Developer: SidoDev-Dz | Brand: RogueByte
- */
-
 #include "hashing/Sha256Validator.hpp"
 #include <openssl/evp.h>
 #include <fstream>
 #include <sstream>
 #include <iomanip>
+#include <algorithm>
 
 namespace rfrp::hashing {
 
 std::string Sha256Validator::calculateBufferHash(const uint8_t* data, size_t length) {
     EVP_MD_CTX* ctx = EVP_MD_CTX_new();
+    if (!ctx) return "";
+
     const EVP_MD* md = EVP_sha256();
     unsigned char hash[EVP_MAX_MD_SIZE];
     unsigned int hashLen = 0;
 
     EVP_DigestInit_ex(ctx, md, nullptr);
-    EVP_DigestUpdate(ctx, data, length);
+    if (data && length > 0) {
+        EVP_DigestUpdate(ctx, data, length);
+    }
     EVP_DigestFinal_ex(ctx, hash, &hashLen);
     EVP_MD_CTX_free(ctx);
 
@@ -35,14 +34,18 @@ std::string Sha256Validator::calculateFileHash(const std::filesystem::path& path
     if (!file.is_open()) return "";
 
     EVP_MD_CTX* ctx = EVP_MD_CTX_new();
+    if (!ctx) return "";
+
     EVP_DigestInit_ex(ctx, EVP_sha256(), nullptr);
 
-    char buffer[65536];
-    while (file.read(buffer, sizeof(buffer))) {
-        EVP_DigestUpdate(ctx, buffer, file.gcount());
+    constexpr size_t BUFFER_SIZE = 65536;
+    std::vector<char> buffer(BUFFER_SIZE);
+
+    while (file.read(buffer.data(), BUFFER_SIZE)) {
+        EVP_DigestUpdate(ctx, buffer.data(), file.gcount());
     }
     if (file.gcount() > 0) {
-        EVP_DigestUpdate(ctx, buffer, file.gcount());
+        EVP_DigestUpdate(ctx, buffer.data(), file.gcount());
     }
 
     unsigned char hash[EVP_MAX_MD_SIZE];
@@ -57,8 +60,20 @@ std::string Sha256Validator::calculateFileHash(const std::filesystem::path& path
     return oss.str();
 }
 
-bool Sha256Validator::verifyIntegrity(const std::filesystem::path& path, const std::string& expectedHex) {
-    return calculateFileHash(path) == expectedHex;
+bool Sha256Validator::verifyFileHash(const std::filesystem::path& path, const std::string& expectedHex) {
+    std::string actual = calculateFileHash(path);
+    std::string expClean = expectedHex;
+    std::transform(actual.begin(), actual.end(), actual.begin(), ::tolower);
+    std::transform(expClean.begin(), expClean.end(), expClean.begin(), ::tolower);
+    return !actual.empty() && actual == expClean;
+}
+
+bool Sha256Validator::verifyBufferHash(const uint8_t* data, size_t length, const std::string& expectedHex) {
+    std::string actual = calculateBufferHash(data, length);
+    std::string expClean = expectedHex;
+    std::transform(actual.begin(), actual.end(), actual.begin(), ::tolower);
+    std::transform(expClean.begin(), expClean.end(), expClean.begin(), ::tolower);
+    return actual == expClean;
 }
 
 } // namespace rfrp::hashing

@@ -1,41 +1,39 @@
-/**
- * RogueByte Forensic Recovery Pro (RFRP)
- * Signature-Based File Carver Engine
- * Developer: SidoDev-Dz | Brand: RogueByte
- */
-
 #pragma once
 #include <string>
 #include <vector>
 #include <cstdint>
 #include <functional>
 #include <filesystem>
+#include "rfrp/Types.hpp"
+#include "carving/SignatureRegistry.hpp"
 
 namespace rfrp::carving {
 
-struct CarvedCandidate {
-    std::string id;
-    std::string extension;
-    uint64_t startOffset;
-    uint64_t endOffset;
-    uint64_t sizeBytes;
-    std::string sha256;
-    bool headerValid;
-    bool trailerValid;
-    std::string validationStatus;
-};
-
 class SignatureCarver {
 public:
-    SignatureCarver() = default;
+    SignatureCarver();
 
-    std::vector<CarvedCandidate> carveFile(
+    std::vector<CarvedResult> carveFile(
         const std::filesystem::path& sourcePath,
         const std::filesystem::path& outputDirectory,
         bool sectorAlignedOnly = true,
         uint32_t sectorSize = 512,
-        std::function<void(int progressPercent)> progressCallback = nullptr
+        std::function<void(int progressPercent, size_t foundCount)> progressCallback = nullptr
     );
+
+    std::vector<CarvedResult> carveBuffer(
+        const uint8_t* buffer,
+        size_t bufferSize,
+        const std::filesystem::path& outputDirectory,
+        bool sectorAlignedOnly = true,
+        uint32_t sectorSize = 512,
+        std::function<void(int progressPercent, size_t foundCount)> progressCallback = nullptr
+    );
+
+    const SignatureRegistry& getRegistry() const { return m_registry; }
+
+private:
+    SignatureRegistry m_registry;
 };
 
 } // namespace rfrp::carving
