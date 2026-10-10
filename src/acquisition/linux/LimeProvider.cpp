@@ -1,5 +1,7 @@
 #include "acquisition/linux/LimeProvider.hpp"
+#if defined(__linux__)
 #include <unistd.h>
+#endif
 
 namespace rfrp::acquisition::linux {
 

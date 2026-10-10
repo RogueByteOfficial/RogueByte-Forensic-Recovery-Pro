@@ -9,6 +9,7 @@ int main() {
 
     bool init = manager.initializeCase("RFRP-TEST-001", "Test Triage", "SidoDev-Dz", "RogueByte", "Unit test");
     assert(init);
+    (void)init;
     assert(manager.hasActiveCase());
     assert(manager.getCaseInfo().id == "RFRP-TEST-001");
     assert(!manager.getCaseInfo().auditLog.empty());
